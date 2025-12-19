@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Net </title>
+    <style>
+        :root {
+            --neon: #00ff41;
+            --danger: #ff003c;
+            --bg: #050505;
+            --panel: #0d0d0d;
+            --border: #1a1a1a;
+            --tg-blue: #2481cc;
+            --btc: #f2a900;
+        }
+
+        * { box-sizing: border-box; cursor: crosshair; }
+        body, html {
+            background-color: var(--bg);
+            color: #ccc;
+            font-family: 'Consolas', monospace;
+            margin: 0; padding: 0;
+            height: 100vh; overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        /* LOGIN */
+        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; justify-content: center; align-items: center; }
+        .login-box { border: 1px solid var(--neon); padding: 50px; text-align: center; background: #000; }
+        input[type="text"] { background: #000; border: 1px solid #333; color: var(--neon); padding: 12px; width: 300px; margin-bottom: 20px; outline: none; }
+        
+        #splash {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+            font-size: 5rem; font-weight: 900; color: #fff; letter-spacing: 15px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 50% { opacity: 0.1; } }
+
+        /* MAIN LAYOUT */
+        #main-app { display: none; height: 100vh; grid-template-rows: 50px 1fr; }
+        header { background: #000; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-size: 11px; color: var(--neon); z-index: 100; }
+
+        .container { display: grid; grid-template-columns: 200px 1fr 280px; height: 100%; overflow: hidden; }
+
+        /* NAV SIDEBAR */
+        nav { background: var(--panel); border-right: 1px solid var(--border); padding: 10px; overflow-y: auto; }
+        .nav-item { padding: 12px; color: #555; cursor: pointer; border-bottom: 1px solid #111; font-size: 10px; transition: 0.2s; }
+        .nav-item:hover, .nav-active { color: var(--neon); background: #111; border-left: 3px solid var(--neon); }
+
+        /* MAIN CONTENT */
+        main { padding: 20px; overflow-y: auto; background: #080808; position: relative; }
+        .section { display: none; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .section-active { display: grid; }
+        .ad-banner { grid-column: 1 / -1; border: 1px dashed var(--danger); padding: 10px; font-size: 10px; color: var(--danger); text-align: center; margin-bottom: 10px; }
+
+        /* CARDS */
+        .card { background: #111; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .card img { width: 100%; height: 140px; object-fit: cover; filter: grayscale(1) brightness(0.6); border: 1px solid #222; margin-bottom: 10px; }
+        .card h3 { color: #fff; font-size: 11px; margin: 0 0 5px 0; height: 30px; }
+        .card p { font-size: 9px; color: #777; margin-bottom: 10px; text-transform: none; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .price { color: var(--btc); font-weight: bold; font-size: 11px; }
+        .buy-btn { background: var(--neon); color: #000; border: none; padding: 6px 10px; font-size: 9px; font-weight: bold; cursor: pointer; }
+        .contact-btn { background: #222; color: #fff; border: 1px solid #444; padding: 6px 10px; font-size: 9px; }
+
+        /* --- CHAT BOLIMI (YANGILANGAN) --- */
+        .chat-sidebar { 
+            background: #030303; 
+            border-left: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+            position: relative;
+        }
+        .chat-header { padding: 10px; font-size: 9px; color: var(--danger); border-bottom: 1px solid #222; text-align: center; font-weight: bold; }
+        
+        .chat-msgs { 
+            flex-grow: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .msg { border-left: 2px solid #222; padding-left: 10px; }
+        .msg-u { color: var(--neon); font-size: 8px; margin-bottom: 4px; display: block; opacity: 0.6; }
+        .msg-t { color: #fff; font-size: 1.1rem; font-weight: 800; line-height: 1.2; text-transform: none; }
+
+        /* AUDIO XABAR DIZAYNI */
+        .admin-audio-msg { margin-top: 8px; background: #121b22; border-radius: 4px; padding: 10px; border-left: 3px solid var(--tg-blue); }
+        .tg-voice-wrap { display: flex; align-items: center; gap: 10px; }
+        .p-btn { 
+            width: 32px; height: 32px; background: var(--tg-blue); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            border: none; outline: none; flex-shrink: 0;
+        }
+        .v-timer { font-size: 0.85rem; color: #fff; font-family: monospace; min-width: 42px; }
+        .wave-sim { flex-grow: 1; height: 14px; background: repeating-linear-gradient(90deg, #3a4b5d 0px, #3a4b5d 2px, transparent 2px, transparent 4px); opacity: 0.4; }
+
+        #chat-input-box { 
+            padding: 15px; 
+            background: #000; 
+            border-top: 1px solid var(--border); 
+            display: block !important;
+        }
+        #chat-input-box input { 
+            width: 100%; 
+            background: #080808; 
+            border: 1px solid #333; 
+            color: var(--neon); 
+            padding: 10px; 
+            font-family: 'Consolas', monospace; 
+            font-size: 11px;
+            outline: none;
+        }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: #222; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h1 style="color: var(--neon);">Username</h1>
+            <input type="text" id="username-in" placeholder="TYPE ALIAS..." autocomplete="off"><br>
+            <button class="buy-btn" style="width: 100%; padding: 15px;" onclick="login()">DucDuck.go</button>
+        </div>
+    </div>
+
+    <div id="splash">Dark Web </div>
+
+    <div id="main-app">
+        <header>
+            <div>Dark Market</div>
+            <div id="url-bar">HTTP://Dark-Net.onion</div>
+            <div id="clock">00:00:00</div>
+        </header>
+
+        <div class="container">
+            <nav>
+                <div class="nav-item nav-active" onclick="switchTab('cards', this)">💳 CC & DUMPS</div>
+                <div class="nav-item" onclick="switchTab('mining', this)">₿ MINING GEAR</div>
+                <div class="nav-item" onclick="switchTab('drugs', this)">💊 PHARMACY</div>
+                <div class="nav-item" onclick="switchTab('jobs', this)">💼 RECRUITMENT</div>
+                <div class="nav-item" onclick="switchTab('hacking', this)">💀 SERVICES</div>
+            </nav>
+
+            <main>
+                <div class="ad-banner">!!! WARNING: ALL TRANSACTIONS ARE FINAL. NO REFUNDS !!!</div>
+
+                <div id="cards" class="section section-active">
+                    <script>
+                        for(let i=1; i<=15; i++){
+                            let p = (0.002 + Math.random()*0.005).toFixed(4);
+                            document.write(`<div class="card"><img src="https://picsum.photos/seed/card${i}/300/200?grayscale"><h3>VISA PLATINUM #${100+i}</h3><p>Bank: Wells Fargo. Bal: $2000-$5000.</p><div class="card-footer"><span class="price">${p} BTC</span><button class="buy-btn">BUY</button></div></div>`);
+                        }
+                    </script>
+                </div>
+                <div id="mining" class="section"></div>
+                <div id="drugs" class="section"></div>
+                <div id="jobs" class="section"></div>
+            </main>
+
+            <aside class="chat-sidebar">
+                <div class="chat-header">SECURE_COMMUNICATION</div>
+                <div class="chat-msgs" id="chat-msgs"></div>
+                <div id="chat-input-box">
+                    <input type="text" id="user-reply" placeholder="Yozing (HA/YOQ)..." autocomplete="off">
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        function login() {
+            const u = document.getElementById('username-in').value;
+            if(!u) return;
+            document.getElementById('login-overlay').style.display = 'none';
+            const s = document.getElementById('splash');
+            s.style.display = 'flex';
+            setTimeout(() => {
+                s.style.display = 'none';
+                document.getElementById('main-app').style.display = 'grid';
+                startStory(u);
+            }, 1500);
+        }
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('section-active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('nav-active'));
+            const target = document.getElementById(id);
+            if(target) target.classList.add('section-active');
+            el.classList.add('nav-active');
+            document.getElementById('url-bar').innerText = `HTTP://DARK_MARKET.ONION/${id.toUpperCase()}`;
+        }
+
+        const chatBox = document.getElementById('chat-msgs');
+        const userInput = document.getElementById('user-reply');
+
+        function addMsg(user, text, isAudio = false) {
+            let d = document.createElement('div');
+            d.className = 'msg';
+            
+            if(isAudio) {
+                d.innerHTML = `
+                <span class="msg-u"># ${user}</span>
+                <div class="msg-t" style="margin-bottom:5px;">${text}</div>
+                <div class="admin-audio-msg">
+                    <div class="tg-voice-wrap">
+                        <button class="p-btn" onclick="playAudio(this)">
+                            <div class="play-icon" style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:10px solid white;margin-left:2px;"></div>
+                        </button>
+                        <div class="v-timer">00:45</div>
+                        <div class="wave-sim"></div>
+                    </div>
+                </div>`;
+            } else {
+                d.innerHTML = `<span class="msg-u"># ${user}</span><div class="msg-t">${text}</div>`;
+            }
+            
+            chatBox.appendChild(d);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function startStory(name) {
+            setTimeout(() => addMsg("SYSTEM", "STABLE_P2P_LINK"), 1000);
+            setTimeout(() => addMsg("ADMIN", "SALOM " + name.toUpperCase()), 2500);
+            setTimeout(() => addMsg("ADMIN", "SAYTNI KO'RDINGMI? BIZGA SENDEK AGENT KERAK."), 4500);
+            setTimeout(() => addMsg("ADMIN", "BIZ BILAN ISHLASHGA TAYYORMISAN?"), 6000);
+        }
+
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const val = this.value.toUpperCase();
+                if(!val) return;
+                addMsg("YOU", val);
+                this.value = '';
+
+                if(val.includes("HA")) {
+                    setTimeout(() => {
+                        addMsg("ADMIN", "YAXSHI. AUDIO TOPSHIRIQNI TINGLA VA MANZILGA BOR:", true);
+                    }, 1500);
+                } else if(val.includes("YOQ")) {
+                    setTimeout(() => addMsg("ADMIN", "AFSUS. ALOQA UZILDI."), 1000);
+                }
+            }
+        });
+
+        function playAudio(btn) {
+            const timer = btn.nextElementSibling;
+            const icon = btn.querySelector('.play-icon');
+            let seconds = 45;
+            
+            // Play -> Pause (Ikki chiziq)
+            icon.style = "width: 10px; height: 10px; border-left: 3px solid white; border-right: 3px solid white; border-top:none; border-bottom:none; margin-left:0;";
+            
+            let iv = setInterval(() => {
+                seconds--;
+                let s = seconds % 60;
+                timer.innerText = `00:${s < 10 ? '0' : ''}${s}`;
+                
+                if(seconds <= 0) {
+                    clearInterval(iv);
+                    // Pause -> Play (Uchburchak)
+                    icon.style = "width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:10px solid white;margin-left:2px;";
+                    btn.onclick = () => playAudio(btn);
+                }
+            }, 1000);
+            
+            btn.onclick = null; 
+        }
+
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('clock').innerText = d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0') + ":" + d.getSeconds().toString().padStart(2,'0');
+        }, 1000);
+    </script>
+</body>
+</html>
